@@ -53,8 +53,11 @@ export type Database = {
         Row: {
           adresse: string | null
           ass_cnss: string | null
+          cause_fin_dialyse: string | null
           cin: string | null
           created_at: string
+          date_debut_dialyse: string | null
+          date_fin_dialyse: string | null
           date_naiss: string | null
           gs: string | null
           id: string
@@ -70,8 +73,11 @@ export type Database = {
         Insert: {
           adresse?: string | null
           ass_cnss?: string | null
+          cause_fin_dialyse?: string | null
           cin?: string | null
           created_at?: string
+          date_debut_dialyse?: string | null
+          date_fin_dialyse?: string | null
           date_naiss?: string | null
           gs?: string | null
           id?: string
@@ -87,8 +93,11 @@ export type Database = {
         Update: {
           adresse?: string | null
           ass_cnss?: string | null
+          cause_fin_dialyse?: string | null
           cin?: string | null
           created_at?: string
+          date_debut_dialyse?: string | null
+          date_fin_dialyse?: string | null
           date_naiss?: string | null
           gs?: string | null
           id?: string
