@@ -239,6 +239,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      set_current_user: {
+        Args: { username_value: string }
+        Returns: undefined
+      }
       update_user_password: {
         Args: { username_input: string; new_password: string }
         Returns: boolean
