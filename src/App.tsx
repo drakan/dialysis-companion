@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+import Admin from './pages/Admin';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,10 +50,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-6">
-                      <h1 className="text-3xl font-bold">Administration</h1>
-                      <p className="text-muted-foreground">Gestion des utilisateurs - À venir</p>
-                    </div>
+                    <Admin />
                   </DashboardLayout>
                 </ProtectedRoute>
               } 
