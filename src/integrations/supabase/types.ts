@@ -210,7 +210,6 @@ export type Database = {
         Returns: {
           user_id: string
           username: string
-          nom_complet: string
           role: string
         }[]
       }
