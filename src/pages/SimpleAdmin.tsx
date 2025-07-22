@@ -66,7 +66,7 @@ const Admin = () => {
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [isSavingPermissions, setIsSavingPermissions] = useState(false);
 
-  const { user, updatePassword, createUser } = useAuth();
+  const { user: currentUser, updatePassword, createUser } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -240,11 +240,50 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur "${username}" ?`)) {
+      try {
+        // Set current user context for RLS
+        await supabase.rpc('set_current_user', { username_value: currentUser?.username || '' });
+        
+        const { error } = await supabase
+          .from('simple_users')
+          .delete()
+          .eq('id', userId);
+
+        if (error) {
+          console.error('Delete error:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Erreur',
+            description: "Erreur lors de la suppression de l'utilisateur",
+          });
+        } else {
+          toast({
+            title: "Utilisateur supprimé",
+            description: "L'utilisateur a été supprimé avec succès",
+          });
+          fetchUsers();
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: "Erreur lors de la suppression de l'utilisateur",
+        });
+      }
+    }
+  };
+
   const savePermissions = async () => {
     if (!selectedUser) return;
 
     setIsSavingPermissions(true);
     try {
+      // Set current user context for RLS
+      await supabase.rpc('set_current_user', { username_value: currentUser?.username || '' });
+      
       // Save general permissions
       const { error: permError } = await supabase
         .from('user_permissions')
@@ -255,13 +294,17 @@ const Admin = () => {
           can_create_new_patients: userPermissions.can_create_new_patients
         });
 
-      if (permError) throw permError;
+      if (permError) {
+        console.error('Permission save error:', permError);
+        throw permError;
+      }
 
       toast({
         title: "Permissions mises à jour",
         description: "Les permissions ont été sauvegardées avec succès",
       });
     } catch (error: any) {
+      console.error('Save permissions error:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -329,7 +372,7 @@ const Admin = () => {
     }
   };
 
-  if (!user || user.role !== 'admin') {
+  if (!currentUser || currentUser.role !== 'admin') {
     return (
       <div className="text-center py-8">
         <h1 className="text-2xl font-bold text-destructive">Accès refusé</h1>
@@ -351,7 +394,7 @@ const Admin = () => {
         <CardHeader>
           <CardTitle>Informations du compte</CardTitle>
           <CardDescription>
-            Utilisateur connecté : {user?.username}
+            Utilisateur connecté : {currentUser?.username}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -598,7 +641,12 @@ const Admin = () => {
                             </Dialog>
                             
                             {u.username !== 'admin' && (
-                              <Button size="sm" variant="outline" className="text-destructive">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-destructive"
+                                onClick={() => handleDeleteUser(u.id, u.username)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
