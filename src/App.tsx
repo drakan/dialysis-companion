@@ -10,6 +10,8 @@ import Index from "./pages/Index";
 import SimpleAuth from './pages/SimpleAuth';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+import PatientForm from './pages/PatientForm';
+import PatientDetails from './pages/PatientDetails';
 import SimpleAdmin from './pages/SimpleAdmin';
 import NotFound from "./pages/NotFound";
 
@@ -46,7 +48,37 @@ const App = () => (
               } 
             />
             <Route 
-              path="/admin" 
+              path="/patients/new" 
+              element={
+                <SimpleProtectedRoute>
+                  <DashboardLayout>
+                    <PatientForm />
+                  </DashboardLayout>
+                </SimpleProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/patients/:id" 
+              element={
+                <SimpleProtectedRoute>
+                  <DashboardLayout>
+                    <PatientDetails />
+                  </DashboardLayout>
+                </SimpleProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/patients/:id/edit" 
+              element={
+                <SimpleProtectedRoute>
+                  <DashboardLayout>
+                    <PatientForm />
+                  </DashboardLayout>
+                </SimpleProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin"
               element={
                 <SimpleProtectedRoute>
                   <DashboardLayout>
