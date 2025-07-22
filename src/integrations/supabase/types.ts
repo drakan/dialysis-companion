@@ -274,6 +274,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      set_config: {
+        Args: { setting_name: string; setting_value: string; is_local: boolean }
+        Returns: undefined
+      }
       set_current_user: {
         Args: { username_value: string }
         Returns: undefined

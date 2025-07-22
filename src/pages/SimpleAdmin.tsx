@@ -27,8 +27,9 @@ interface Patient {
 interface UserPermissions {
   id?: string;
   user_id: string;
-  can_create_patients: boolean;
-  can_modify_existing_patients: boolean;
+  permission_type: 'viewer' | 'creator';
+  can_view_all_patients: boolean;
+  can_create_new_patients: boolean;
 }
 
 interface PatientAccess {
@@ -48,8 +49,9 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState<SimpleUser | null>(null);
   const [userPermissions, setUserPermissions] = useState<UserPermissions>({
     user_id: '',
-    can_create_patients: false,
-    can_modify_existing_patients: false
+    permission_type: 'viewer',
+    can_view_all_patients: false,
+    can_create_new_patients: false,
   });
   const [patientAccess, setPatientAccess] = useState<PatientAccess[]>([]);
   const [newPatientAccess, setNewPatientAccess] = useState({
@@ -122,10 +124,14 @@ const Admin = () => {
 
       if (permError && permError.code !== 'PGRST116') throw permError;
 
-      setUserPermissions(permData || {
+      setUserPermissions(permData ? {
+        ...permData,
+        permission_type: (permData.permission_type as 'viewer' | 'creator') || 'viewer'
+      } : {
         user_id: userId,
-        can_create_patients: false,
-        can_modify_existing_patients: false
+        permission_type: 'viewer',
+        can_view_all_patients: false,
+        can_create_new_patients: false,
       });
 
       // Fetch patient access
@@ -244,8 +250,9 @@ const Admin = () => {
         .from('user_permissions')
         .upsert({
           user_id: selectedUser.id,
-          can_create_patients: userPermissions.can_create_patients,
-          can_modify_existing_patients: userPermissions.can_modify_existing_patients
+          permission_type: userPermissions.permission_type,
+          can_view_all_patients: userPermissions.can_view_all_patients,
+          can_create_new_patients: userPermissions.can_create_new_patients
         });
 
       if (permError) throw permError;
@@ -454,7 +461,7 @@ const Admin = () => {
                                 <DialogHeader>
                                   <DialogTitle>Permissions de {u.username}</DialogTitle>
                                   <DialogDescription>
-                                    Gérer les permissions et accès aux patients
+                                    Définir le type d'utilisateur et ses permissions
                                   </DialogDescription>
                                 </DialogHeader>
                                 
@@ -465,83 +472,126 @@ const Admin = () => {
                                 ) : (
                                   <div className="space-y-6">
                                     <div>
-                                      <h4 className="font-medium mb-3">Permissions générales</h4>
-                                      <div className="space-y-2">
-                                        <div className="flex items-center space-x-2">
-                                          <Checkbox
-                                            id="can_create"
-                                            checked={userPermissions.can_create_patients}
-                                            onCheckedChange={(checked) => 
-                                              setUserPermissions(prev => ({ ...prev, can_create_patients: !!checked }))
-                                            }
-                                          />
-                                          <label htmlFor="can_create">Peut créer de nouveaux patients</label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                          <Checkbox
-                                            id="can_modify"
-                                            checked={userPermissions.can_modify_existing_patients}
-                                            onCheckedChange={(checked) => 
-                                              setUserPermissions(prev => ({ ...prev, can_modify_existing_patients: !!checked }))
-                                            }
-                                          />
-                                          <label htmlFor="can_modify">Peut modifier les patients existants</label>
-                                        </div>
-                                      </div>
-                                      <Button 
-                                        onClick={savePermissions} 
-                                        disabled={isSavingPermissions}
-                                        className="mt-3"
+                                      <h4 className="font-medium mb-3">Type d'utilisateur</h4>
+                                      <Select 
+                                        value={userPermissions.permission_type} 
+                                        onValueChange={(value) => 
+                                          setUserPermissions(prev => ({ 
+                                            ...prev, 
+                                            permission_type: value as 'viewer' | 'creator',
+                                            can_view_all_patients: value === 'viewer' ? prev.can_view_all_patients : false,
+                                            can_create_new_patients: value === 'creator' ? true : false
+                                          }))
+                                        }
                                       >
-                                        {isSavingPermissions && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Sauvegarder les permissions
-                                      </Button>
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="viewer">Consultant (lecture seule)</SelectItem>
+                                          <SelectItem value="creator">Créateur (ajout et modification limitée)</SelectItem>
+                                        </SelectContent>
+                                      </Select>
                                     </div>
 
-                                    <div>
-                                      <h4 className="font-medium mb-3">Accès spécifique aux patients</h4>
-                                      
-                                      <div className="flex gap-2 mb-4">
-                                        <Select value={newPatientAccess.patient_id} onValueChange={(value) => 
-                                          setNewPatientAccess(prev => ({ ...prev, patient_id: value }))
-                                        }>
-                                          <SelectTrigger className="flex-1">
-                                            <SelectValue placeholder="Sélectionner un patient" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {patients.map((patient) => (
-                                              <SelectItem key={patient.id} value={patient.id}>
-                                                {patient.nom_complet}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <Button onClick={addPatientAccess} disabled={!newPatientAccess.patient_id}>
-                                          Ajouter
-                                        </Button>
-                                      </div>
-
-                                      <div className="space-y-2">
-                                        {patientAccess.map((access) => (
-                                          <div key={access.id} className="flex items-center justify-between p-2 border rounded">
-                                            <span>{access.patient?.nom_complet}</span>
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-sm text-muted-foreground">
-                                                {access.can_view ? 'Lecture' : ''} 
-                                                {access.can_edit ? ' • Écriture' : ''}
-                                              </span>
-                                              <Button 
-                                                size="sm" 
-                                                variant="outline" 
-                                                onClick={() => access.id && removePatientAccess(access.id)}
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            </div>
+                                    {userPermissions.permission_type === 'viewer' && (
+                                      <div>
+                                        <h4 className="font-medium mb-3">Options de consultation</h4>
+                                        <div className="space-y-2">
+                                          <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                              id="can_view_all"
+                                              checked={userPermissions.can_view_all_patients}
+                                              onCheckedChange={(checked) => 
+                                                setUserPermissions(prev => ({ ...prev, can_view_all_patients: !!checked }))
+                                              }
+                                            />
+                                            <label htmlFor="can_view_all">Peut consulter tous les patients</label>
                                           </div>
-                                        ))}
+                                          {!userPermissions.can_view_all_patients && (
+                                            <p className="text-sm text-muted-foreground">
+                                              Si non coché, vous devez assigner des patients spécifiques ci-dessous
+                                            </p>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
+                                    )}
+
+                                    {userPermissions.permission_type === 'creator' && (
+                                      <div>
+                                        <h4 className="font-medium mb-3">Permissions de création</h4>
+                                        <div className="space-y-2">
+                                          <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                              id="can_create"
+                                              checked={userPermissions.can_create_new_patients}
+                                              onCheckedChange={(checked) => 
+                                                setUserPermissions(prev => ({ ...prev, can_create_new_patients: !!checked }))
+                                              }
+                                            />
+                                            <label htmlFor="can_create">Peut créer de nouveaux patients</label>
+                                          </div>
+                                          <p className="text-sm text-muted-foreground">
+                                            Peut modifier uniquement les patients qu'il a créés pendant sa session
+                                          </p>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    <Button 
+                                      onClick={savePermissions} 
+                                      disabled={isSavingPermissions}
+                                      className="w-full"
+                                    >
+                                      {isSavingPermissions && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                      Sauvegarder les permissions
+                                    </Button>
+
+                                    {userPermissions.permission_type === 'viewer' && !userPermissions.can_view_all_patients && (
+                                      <div>
+                                        <h4 className="font-medium mb-3">Accès spécifique aux patients</h4>
+                                        
+                                        <div className="flex gap-2 mb-4">
+                                          <Select value={newPatientAccess.patient_id} onValueChange={(value) => 
+                                            setNewPatientAccess(prev => ({ ...prev, patient_id: value }))
+                                          }>
+                                            <SelectTrigger className="flex-1">
+                                              <SelectValue placeholder="Sélectionner un patient" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {patients.map((patient) => (
+                                                <SelectItem key={patient.id} value={patient.id}>
+                                                  {patient.nom_complet}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                          <Button onClick={addPatientAccess} disabled={!newPatientAccess.patient_id}>
+                                            Ajouter
+                                          </Button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                          {patientAccess.map((access) => (
+                                            <div key={access.id} className="flex items-center justify-between p-2 border rounded">
+                                              <span>{access.patient?.nom_complet}</span>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-sm text-muted-foreground">
+                                                  Lecture seule
+                                                </span>
+                                                <Button 
+                                                  size="sm" 
+                                                  variant="outline" 
+                                                  onClick={() => access.id && removePatientAccess(access.id)}
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </DialogContent>
@@ -620,29 +670,39 @@ const Admin = () => {
         <TabsContent value="permissions" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Gestion des permissions</CardTitle>
+              <CardTitle>Système de permissions</CardTitle>
               <CardDescription>
-                Cliquez sur le bouton paramètres d'un utilisateur dans l'onglet "Utilisateurs" pour gérer ses permissions
+                Explication des types d'utilisateurs et leurs permissions
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="border rounded p-4">
-                    <h4 className="font-medium mb-2">Permissions générales</h4>
+                    <h4 className="font-medium mb-2">🔍 Consultant (Viewer)</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Peut créer de nouveaux patients</li>
-                      <li>• Peut modifier les patients existants</li>
+                      <li>• Consultation des données en lecture seule</li>
+                      <li>• Peut voir tous les patients OU des patients spécifiques</li>
+                      <li>• Aucune possibilité de modification</li>
+                      <li>• Idéal pour les superviseurs ou auditeurs</li>
                     </ul>
                   </div>
                   <div className="border rounded p-4">
-                    <h4 className="font-medium mb-2">Accès spécifique</h4>
+                    <h4 className="font-medium mb-2">➕ Créateur (Creator)</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Accès en lecture à des patients spécifiques</li>
-                      <li>• Accès en écriture à des patients spécifiques</li>
-                      <li>• Idéal pour les centres temporaires</li>
+                      <li>• Peut ajouter de nouveaux patients</li>
+                      <li>• Peut modifier uniquement ses créations</li>
+                      <li>• Modifications limitées à la session courante</li>
+                      <li>• Idéal pour les utilisateurs temporaires</li>
                     </ul>
                   </div>
+                </div>
+                <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+                  <h4 className="font-medium">Note importante</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Les créateurs peuvent uniquement modifier les patients qu'ils ont ajoutés pendant leur session de connexion actuelle. 
+                    Une fois déconnectés, ils perdent la possibilité de modifier ces patients.
+                  </p>
                 </div>
               </div>
             </CardContent>
