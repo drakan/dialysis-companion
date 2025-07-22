@@ -235,6 +235,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       update_user_password: {
         Args: { username_input: string; new_password: string }
         Returns: boolean
