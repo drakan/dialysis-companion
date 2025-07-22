@@ -47,6 +47,13 @@ export type Database = {
             referencedRelation: "patients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "patient_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "simple_users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       patients: {
@@ -143,7 +150,6 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          nom_complet: string
           password: string
           role: Database["public"]["Enums"]["app_role"] | null
           updated_at: string
@@ -152,7 +158,6 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          nom_complet: string
           password: string
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
@@ -161,7 +166,6 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          nom_complet?: string
           password?: string
           role?: Database["public"]["Enums"]["app_role"] | null
           updated_at?: string
@@ -211,12 +215,18 @@ export type Database = {
         }[]
       }
       create_user: {
-        Args: {
-          username_input: string
-          password_input: string
-          nom_complet_input: string
-          role_input?: string
-        }
+        Args:
+          | {
+              username_input: string
+              password_input: string
+              nom_complet_input: string
+              role_input?: string
+            }
+          | {
+              username_input: string
+              password_input: string
+              role_input?: string
+            }
         Returns: string
       }
       has_role: {

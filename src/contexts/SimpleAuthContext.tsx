@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 interface User {
   id: string;
   username: string;
-  nom_complet: string;
   role: string;
 }
 
@@ -13,7 +12,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (username: string, password: string) => Promise<{ error: any }>;
   signOut: () => void;
-  createUser: (username: string, password: string, nom_complet: string, role?: string) => Promise<{ error: any }>;
+  createUser: (username: string, password: string, role?: string) => Promise<{ error: any }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
 }
 
@@ -58,7 +57,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const user: User = {
           id: userData.user_id,
           username: userData.username,
-          nom_complet: userData.nom_complet,
           role: userData.role
         };
         
@@ -82,12 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  const createUser = async (username: string, password: string, nom_complet: string, role: string = 'user') => {
+  const createUser = async (username: string, password: string, role: string = 'user') => {
     try {
       const { error } = await supabase.rpc('create_user', {
         username_input: username,
         password_input: password,
-        nom_complet_input: nom_complet,
         role_input: role
       });
       
