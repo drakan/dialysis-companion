@@ -3,14 +3,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { AuthProvider } from './contexts/SimpleAuthContext';
+import { SimpleProtectedRoute } from './components/SimpleProtectedRoute';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import Index from "./pages/Index";
-import Auth from './pages/Auth';
+import SimpleAuth from './pages/SimpleAuth';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
-import Admin from './pages/Admin';
+import SimpleAdmin from './pages/SimpleAdmin';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,35 +24,35 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
+            <Route path="/auth" element={<SimpleAuth />} />
             <Route 
               path="/dashboard" 
               element={
-                <ProtectedRoute>
+                <SimpleProtectedRoute>
                   <DashboardLayout>
                     <Dashboard />
                   </DashboardLayout>
-                </ProtectedRoute>
+                </SimpleProtectedRoute>
               } 
             />
             <Route 
               path="/patients" 
               element={
-                <ProtectedRoute>
+                <SimpleProtectedRoute>
                   <DashboardLayout>
                     <Patients />
                   </DashboardLayout>
-                </ProtectedRoute>
+                </SimpleProtectedRoute>
               } 
             />
             <Route 
               path="/admin" 
               element={
-                <ProtectedRoute>
+                <SimpleProtectedRoute>
                   <DashboardLayout>
-                    <Admin />
+                    <SimpleAdmin />
                   </DashboardLayout>
-                </ProtectedRoute>
+                </SimpleProtectedRoute>
               } 
             />
             <Route path="*" element={<NotFound />} />

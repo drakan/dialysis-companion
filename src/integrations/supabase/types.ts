@@ -130,6 +130,36 @@ export type Database = {
         }
         Relationships: []
       }
+      simple_users: {
+        Row: {
+          created_at: string
+          id: string
+          nom_complet: string
+          password: string
+          role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom_complet: string
+          password: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom_complet?: string
+          password?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           can_create_patients: boolean | null
@@ -162,11 +192,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authenticate_user: {
+        Args: { username_input: string; password_input: string }
+        Returns: {
+          user_id: string
+          username: string
+          nom_complet: string
+          role: string
+        }[]
+      }
+      create_user: {
+        Args: {
+          username_input: string
+          password_input: string
+          nom_complet_input: string
+          role_input?: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      update_user_password: {
+        Args: { username_input: string; new_password: string }
         Returns: boolean
       }
     }

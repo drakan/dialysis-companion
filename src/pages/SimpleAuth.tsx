@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LoginForm } from '@/components/auth/LoginForm';
-import { useAuth } from '@/contexts/AuthContext';
+import { SimpleLoginForm } from '@/components/auth/SimpleLoginForm';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 
-const Auth = () => {
+const SimpleAuth = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -23,9 +23,9 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
-      <LoginForm />
+      <SimpleLoginForm />
     </div>
   );
 };
 
-export default Auth;
+export default SimpleAuth;

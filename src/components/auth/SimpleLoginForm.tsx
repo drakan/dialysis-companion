@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
-export const LoginForm = () => {
-  const [email, setEmail] = useState('');
+export const SimpleLoginForm = () => {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
@@ -21,15 +21,13 @@ export const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(username, password);
       
       if (error) {
         toast({
           variant: "destructive",
           title: "Erreur de connexion",
-          description: error.message === 'Invalid login credentials' 
-            ? "Email ou mot de passe incorrect" 
-            : error.message,
+          description: error.message || "Nom d'utilisateur ou mot de passe incorrect",
         });
       } else {
         toast({
@@ -60,14 +58,15 @@ export const LoginForm = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="username">Nom d'utilisateur</Label>
             <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               disabled={isLoading}
+              placeholder="admin"
             />
           </div>
           <div className="space-y-2">
@@ -79,6 +78,7 @@ export const LoginForm = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
+              placeholder="admin"
             />
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
