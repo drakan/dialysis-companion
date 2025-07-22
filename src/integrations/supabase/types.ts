@@ -14,16 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      patient_access: {
+        Row: {
+          can_edit: boolean | null
+          can_view: boolean | null
+          created_at: string
+          id: string
+          patient_id: string
+          user_id: string
+        }
+        Insert: {
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string
+          id?: string
+          patient_id: string
+          user_id: string
+        }
+        Update: {
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string
+          id?: string
+          patient_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_access_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          adresse: string | null
+          ass_cnss: string | null
+          cin: string | null
+          created_at: string
+          date_naiss: string | null
+          gs: string | null
+          id: string
+          nom_complet: string
+          profession: string | null
+          sexe: string | null
+          situa_fami: string | null
+          tele: string | null
+          tele_urg: string | null
+          type: Database["public"]["Enums"]["patient_type"] | null
+          updated_at: string
+        }
+        Insert: {
+          adresse?: string | null
+          ass_cnss?: string | null
+          cin?: string | null
+          created_at?: string
+          date_naiss?: string | null
+          gs?: string | null
+          id?: string
+          nom_complet: string
+          profession?: string | null
+          sexe?: string | null
+          situa_fami?: string | null
+          tele?: string | null
+          tele_urg?: string | null
+          type?: Database["public"]["Enums"]["patient_type"] | null
+          updated_at?: string
+        }
+        Update: {
+          adresse?: string | null
+          ass_cnss?: string | null
+          cin?: string | null
+          created_at?: string
+          date_naiss?: string | null
+          gs?: string | null
+          id?: string
+          nom_complet?: string
+          profession?: string | null
+          sexe?: string | null
+          situa_fami?: string | null
+          tele?: string | null
+          tele_urg?: string | null
+          type?: Database["public"]["Enums"]["patient_type"] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          nom_complet: string
+          role: Database["public"]["Enums"]["app_role"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom_complet: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom_complet?: string
+          role?: Database["public"]["Enums"]["app_role"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          can_create_patients: boolean | null
+          can_modify_existing_patients: boolean | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_create_patients?: boolean | null
+          can_modify_existing_patients?: boolean | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_create_patients?: boolean | null
+          can_modify_existing_patients?: boolean | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      patient_type:
+        | "permanent"
+        | "vacancier"
+        | "transféré"
+        | "décédé"
+        | "greffé"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +304,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      patient_type: ["permanent", "vacancier", "transféré", "décédé", "greffé"],
+    },
   },
 } as const
