@@ -88,6 +88,31 @@ const Patients = () => {
     setFilteredPatients(filtered);
   };
 
+  const handleDelete = async (patientId: string, patientName: string) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le patient "${patientName}" ?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .delete()
+        .eq('id', patientId);
+
+      if (error) throw error;
+      
+      toast({ title: 'Patient supprimé avec succès' });
+      fetchPatients(); // Recharger la liste
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de supprimer le patient',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const getTypeBadgeVariant = (type: string) => {
     switch (type) {
       case 'permanent':
@@ -248,6 +273,7 @@ const Patients = () => {
                           size="sm"
                           variant="outline"
                           className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(patient.id, patient.nom_complet)}
                         >
                           <Trash className="h-4 w-4" />
                         </Button>

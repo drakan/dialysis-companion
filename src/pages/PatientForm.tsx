@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,10 +26,55 @@ const PatientForm = () => {
     adresse: '',
     profession: '',
     situa_fami: '',
-    type: 'permanent' as const
+    type: 'permanent' as 'permanent' | 'vacancier' | 'transféré' | 'décédé' | 'greffé'
   });
 
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(isEdit);
+
+  useEffect(() => {
+    if (isEdit && id) {
+      fetchPatientData();
+    }
+  }, [id, isEdit]);
+
+  const fetchPatientData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setFormData({
+          nom_complet: data.nom_complet || '',
+          cin: data.cin || '',
+          ass_cnss: data.ass_cnss || '',
+          date_naiss: data.date_naiss || '',
+          sexe: data.sexe || '',
+          gs: data.gs || '',
+          tele: data.tele || '',
+          tele_urg: data.tele_urg || '',
+          adresse: data.adresse || '',
+          profession: data.profession || '',
+          situa_fami: data.situa_fami || '',
+          type: data.type || 'permanent'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les données du patient',
+        variant: 'destructive'
+      });
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +114,14 @@ const PatientForm = () => {
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  if (initialLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6">
