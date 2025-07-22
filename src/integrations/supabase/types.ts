@@ -173,28 +173,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_created_patients: {
+        Row: {
+          created_at: string | null
+          id: string
+          patient_id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          patient_id: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          patient_id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_created_patients_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
-          can_create_patients: boolean | null
-          can_modify_existing_patients: boolean | null
+          can_create_new_patients: boolean | null
+          can_view_all_patients: boolean | null
           created_at: string
           id: string
+          permission_type: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          can_create_patients?: boolean | null
-          can_modify_existing_patients?: boolean | null
+          can_create_new_patients?: boolean | null
+          can_view_all_patients?: boolean | null
           created_at?: string
           id?: string
+          permission_type?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          can_create_patients?: boolean | null
-          can_modify_existing_patients?: boolean | null
+          can_create_new_patients?: boolean | null
+          can_view_all_patients?: boolean | null
           created_at?: string
           id?: string
+          permission_type?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -65,9 +65,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: userData.role
         };
         
-        // Store user data
+        // Generate session ID for tracking created patients
+        const sessionId = Math.random().toString(36).substring(2, 15);
+        
+        // Store user data and session
         localStorage.setItem('dialyse_user', JSON.stringify(user));
         localStorage.setItem('dialyse_current_user', username);
+        localStorage.setItem('dialyse_session_id', sessionId);
+        
+        // Set session ID in database context
+        await supabase.rpc('set_config', {
+          setting_name: 'app.session_id',
+          setting_value: sessionId,
+          is_local: false
+        });
         
         setUser(user);
         return { error: null };
@@ -82,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = () => {
     localStorage.removeItem('dialyse_user');
     localStorage.removeItem('dialyse_current_user');
+    localStorage.removeItem('dialyse_session_id');
     setUser(null);
   };
 
