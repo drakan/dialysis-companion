@@ -208,8 +208,14 @@ const PatientForm = () => {
                 <Label htmlFor="tele">Téléphone</Label>
                 <Input
                   id="tele"
+                  type="tel"
+                  maxLength={8}
                   value={formData.tele}
-                  onChange={(e) => handleChange('tele', e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    handleChange('tele', value);
+                  }}
+                  placeholder="12345678"
                 />
               </div>
 
@@ -217,8 +223,14 @@ const PatientForm = () => {
                 <Label htmlFor="tele_urg">Téléphone urgence</Label>
                 <Input
                   id="tele_urg"
+                  type="tel"
+                  maxLength={8}
                   value={formData.tele_urg}
-                  onChange={(e) => handleChange('tele_urg', e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    handleChange('tele_urg', value);
+                  }}
+                  placeholder="12345678"
                 />
               </div>
 
