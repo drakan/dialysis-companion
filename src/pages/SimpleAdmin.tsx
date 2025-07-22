@@ -536,62 +536,62 @@ const Admin = () => {
                                           </p>
                                         </div>
                                       </div>
-                                    )}
+                                     )}
 
-                                    <Button 
-                                      onClick={savePermissions} 
-                                      disabled={isSavingPermissions}
-                                      className="w-full"
-                                    >
-                                      {isSavingPermissions && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                      Sauvegarder les permissions
-                                    </Button>
+                                     {userPermissions.permission_type === 'viewer' && !userPermissions.can_view_all_patients && (
+                                       <div>
+                                         <h4 className="font-medium mb-3">Accès spécifique aux patients</h4>
+                                         
+                                         <div className="flex gap-2 mb-4">
+                                           <Select value={newPatientAccess.patient_id} onValueChange={(value) => 
+                                             setNewPatientAccess(prev => ({ ...prev, patient_id: value }))
+                                           }>
+                                             <SelectTrigger className="flex-1">
+                                               <SelectValue placeholder="Sélectionner un patient" />
+                                             </SelectTrigger>
+                                             <SelectContent>
+                                               {patients.map((patient) => (
+                                                 <SelectItem key={patient.id} value={patient.id}>
+                                                   {patient.nom_complet}
+                                                 </SelectItem>
+                                               ))}
+                                             </SelectContent>
+                                           </Select>
+                                           <Button onClick={addPatientAccess} disabled={!newPatientAccess.patient_id}>
+                                             Ajouter
+                                           </Button>
+                                         </div>
 
-                                    {userPermissions.permission_type === 'viewer' && !userPermissions.can_view_all_patients && (
-                                      <div>
-                                        <h4 className="font-medium mb-3">Accès spécifique aux patients</h4>
-                                        
-                                        <div className="flex gap-2 mb-4">
-                                          <Select value={newPatientAccess.patient_id} onValueChange={(value) => 
-                                            setNewPatientAccess(prev => ({ ...prev, patient_id: value }))
-                                          }>
-                                            <SelectTrigger className="flex-1">
-                                              <SelectValue placeholder="Sélectionner un patient" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {patients.map((patient) => (
-                                                <SelectItem key={patient.id} value={patient.id}>
-                                                  {patient.nom_complet}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                          <Button onClick={addPatientAccess} disabled={!newPatientAccess.patient_id}>
-                                            Ajouter
-                                          </Button>
-                                        </div>
+                                         <div className="space-y-2">
+                                           {patientAccess.map((access) => (
+                                             <div key={access.id} className="flex items-center justify-between p-2 border rounded">
+                                               <span>{access.patient?.nom_complet}</span>
+                                               <div className="flex items-center gap-2">
+                                                 <span className="text-sm text-muted-foreground">
+                                                   Lecture seule
+                                                 </span>
+                                                 <Button 
+                                                   size="sm" 
+                                                   variant="outline" 
+                                                   onClick={() => access.id && removePatientAccess(access.id)}
+                                                 >
+                                                   <Trash2 className="h-4 w-4" />
+                                                 </Button>
+                                               </div>
+                                             </div>
+                                           ))}
+                                         </div>
+                                       </div>
+                                     )}
 
-                                        <div className="space-y-2">
-                                          {patientAccess.map((access) => (
-                                            <div key={access.id} className="flex items-center justify-between p-2 border rounded">
-                                              <span>{access.patient?.nom_complet}</span>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">
-                                                  Lecture seule
-                                                </span>
-                                                <Button 
-                                                  size="sm" 
-                                                  variant="outline" 
-                                                  onClick={() => access.id && removePatientAccess(access.id)}
-                                                >
-                                                  <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
+                                     <Button 
+                                       onClick={savePermissions} 
+                                       disabled={isSavingPermissions}
+                                       className="w-full mt-6"
+                                     >
+                                       {isSavingPermissions && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                       Sauvegarder les permissions
+                                     </Button>
                                   </div>
                                 )}
                               </DialogContent>
