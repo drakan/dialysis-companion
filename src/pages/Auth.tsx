@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { LoginForm } from '@/components/auth/LoginForm';
 import { useAuth } from '@/contexts/AuthContext';
 
-const Index = () => {
+const Auth = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -23,17 +23,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
-      <div className="text-center space-y-6 max-w-md">
-        <h1 className="text-4xl font-bold">Centre de Dialyse</h1>
-        <p className="text-xl text-muted-foreground">
-          Système de gestion des patients
-        </p>
-        <Button asChild size="lg">
-          <Link to="/auth">Se connecter</Link>
-        </Button>
-      </div>
+      <LoginForm />
     </div>
   );
 };
 
-export default Index;
+export default Auth;
