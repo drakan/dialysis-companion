@@ -25,9 +25,9 @@ const Patients = () => {
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sexeFilter, setSexeFilter] = useState('');
-  const [gsFilter, setGsFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
+  const [sexeFilter, setSexeFilter] = useState('all');
+  const [gsFilter, setGsFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -73,15 +73,15 @@ const Patients = () => {
       );
     }
 
-    if (sexeFilter) {
+    if (sexeFilter && sexeFilter !== 'all') {
       filtered = filtered.filter(patient => patient.sexe === sexeFilter);
     }
 
-    if (gsFilter) {
+    if (gsFilter && gsFilter !== 'all') {
       filtered = filtered.filter(patient => patient.gs === gsFilter);
     }
 
-    if (typeFilter) {
+    if (typeFilter && typeFilter !== 'all') {
       filtered = filtered.filter(patient => patient.type === typeFilter);
     }
 
@@ -120,7 +120,7 @@ const Patients = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">
-            {typeFilter ? `Patients ${typeFilter}s` : 'Liste des patients'}
+            {typeFilter && typeFilter !== 'all' ? `Patients ${typeFilter}s` : 'Liste des patients'}
           </h1>
           <p className="text-muted-foreground">
             Gérez les informations des patients
@@ -155,7 +155,7 @@ const Patients = () => {
                 <SelectValue placeholder="Sexe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="M">Masculin</SelectItem>
                 <SelectItem value="F">Féminin</SelectItem>
               </SelectContent>
@@ -166,7 +166,7 @@ const Patients = () => {
                 <SelectValue placeholder="Groupe sanguin" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 {uniqueGS.map(gs => (
                   <SelectItem key={gs} value={gs}>{gs}</SelectItem>
                 ))}
@@ -179,7 +179,7 @@ const Patients = () => {
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   <SelectItem value="permanent">Permanent</SelectItem>
                   <SelectItem value="vacancier">Vacancier</SelectItem>
                   <SelectItem value="transféré">Transféré</SelectItem>
