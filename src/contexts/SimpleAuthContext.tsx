@@ -45,6 +45,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (username: string, password: string) => {
     try {
+      // Set current user context for RLS policies
+      await supabase.rpc('set_config', {
+        setting_name: 'app.current_user',
+        setting_value: username,
+        is_local: false
+      });
+
       const { data, error } = await supabase.rpc('authenticate_user', {
         username_input: username,
         password_input: password
