@@ -37,8 +37,10 @@ const Patients = () => {
 
   useEffect(() => {
     if (user) {
-      fetchUserPermissions();
-      fetchPatients();
+      fetchUserPermissions().then(() => {
+        // Fetch patients after permissions are loaded
+        fetchPatients();
+      });
     }
     // Set type filter from URL params if present
     const typeFromUrl = searchParams.get('type');
@@ -77,8 +79,11 @@ const Patients = () => {
         if (createdError) throw createdError;
         setCreatedPatients(createdData?.map(p => p.patient_id) || []);
       }
+      
+      return data; // Return the permissions data
     } catch (error: any) {
       console.error('Error fetching permissions:', error);
+      return null;
     }
   };
 
@@ -87,10 +92,43 @@ const Patients = () => {
       // Set current user context
       await supabase.rpc('set_current_user', { username_value: user?.username || '' });
       
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .order('nom_complet');
+      let data, error;
+      
+      if (user?.role === 'admin') {
+        // Admin can see all patients
+        const result = await supabase
+          .from('patients')
+          .select('*')
+          .order('nom_complet');
+        data = result.data;
+        error = result.error;
+      } else if (userPermissions?.can_view_all_patients) {
+        // User can view all patients
+        const result = await supabase
+          .from('patients')
+          .select('*')
+          .order('nom_complet');
+        data = result.data;
+        error = result.error;
+      } else {
+        // User can only view specific patients they have access to
+        const result = await supabase
+          .from('patient_access')
+          .select(`
+            patient:patients(*)
+          `)
+          .eq('user_id', user?.id)
+          .eq('can_view', true);
+        
+        if (result.error) {
+          error = result.error;
+          data = null;
+        } else {
+          // Extract patient data from the joined result
+          data = result.data?.map(access => access.patient).filter(Boolean) || [];
+          error = null;
+        }
+      }
 
       if (error) throw error;
       setPatients(data || []);
