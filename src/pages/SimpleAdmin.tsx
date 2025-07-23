@@ -319,6 +319,9 @@ const Admin = () => {
     if (!selectedUser || !newPatientAccess.patient_id) return;
 
     try {
+      // Set current user context for RLS
+      await supabase.rpc('set_current_user', { username_value: currentUser?.username || '' });
+      
       const { error } = await supabase
         .from('patient_access')
         .insert({
@@ -328,7 +331,10 @@ const Admin = () => {
           can_edit: newPatientAccess.can_edit
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Patient access error:', error);
+        throw error;
+      }
 
       toast({
         title: "Accès ajouté",
@@ -338,6 +344,7 @@ const Admin = () => {
       setNewPatientAccess({ patient_id: '', can_view: true, can_edit: false });
       fetchUserPermissions(selectedUser.id);
     } catch (error: any) {
+      console.error('Add patient access error:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -348,12 +355,18 @@ const Admin = () => {
 
   const removePatientAccess = async (accessId: string) => {
     try {
+      // Set current user context for RLS
+      await supabase.rpc('set_current_user', { username_value: currentUser?.username || '' });
+      
       const { error } = await supabase
         .from('patient_access')
         .delete()
         .eq('id', accessId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Remove patient access error:', error);
+        throw error;
+      }
 
       toast({
         title: "Accès supprimé",
@@ -364,6 +377,7 @@ const Admin = () => {
         fetchUserPermissions(selectedUser.id);
       }
     } catch (error: any) {
+      console.error('Remove patient access error:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
