@@ -76,6 +76,9 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
+      // Set current user context for RLS
+      await supabase.rpc('set_current_user', { username_value: currentUser?.username || '' });
+      
       const { data, error } = await supabase
         .from('simple_users')
         .select('*')
@@ -84,6 +87,7 @@ const Admin = () => {
       if (error) throw error;
       setUsers(data || []);
     } catch (error: any) {
+      console.error('Fetch users error:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
