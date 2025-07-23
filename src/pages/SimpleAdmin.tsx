@@ -124,7 +124,7 @@ const Admin = () => {
         .from('user_permissions')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (permError && permError.code !== 'PGRST116') throw permError;
 
