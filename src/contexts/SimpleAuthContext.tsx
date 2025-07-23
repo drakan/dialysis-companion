@@ -45,11 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (username: string, password: string) => {
     try {
-      // Set current user context for RLS policies
-      await supabase.rpc('set_current_user', {
-        username_value: username
-      });
-
       const { data, error } = await supabase.rpc('authenticate_user', {
         username_input: username,
         password_input: password
@@ -73,11 +68,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('dialyse_current_user', username);
         localStorage.setItem('dialyse_session_id', sessionId);
         
-        // Set session ID in database context
-        await supabase.rpc('set_config', {
-          setting_name: 'app.session_id',
-          setting_value: sessionId,
-          is_local: false
+        // Set current user context and session for RLS policies
+        await supabase.rpc('set_current_user', {
+          username_value: username
+        });
+        
+        await supabase.rpc('set_session_id', {
+          session_value: sessionId
         });
         
         setUser(user);

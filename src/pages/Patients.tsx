@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 import { Plus, Search, Eye, Edit, Trash } from 'lucide-react';
 
 interface Patient {
@@ -28,24 +29,64 @@ const Patients = () => {
   const [sexeFilter, setSexeFilter] = useState('all');
   const [gsFilter, setGsFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [userPermissions, setUserPermissions] = useState<any>(null);
+  const [createdPatients, setCreatedPatients] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchPatients();
+    if (user) {
+      fetchUserPermissions();
+      fetchPatients();
+    }
     // Set type filter from URL params if present
     const typeFromUrl = searchParams.get('type');
     if (typeFromUrl) {
       setTypeFilter(typeFromUrl);
     }
-  }, [searchParams]);
+  }, [searchParams, user]);
 
   useEffect(() => {
     filterPatients();
   }, [patients, searchTerm, sexeFilter, gsFilter, typeFilter]);
 
+  const fetchUserPermissions = async () => {
+    try {
+      // Set current user context
+      await supabase.rpc('set_current_user', { username_value: user?.username || '' });
+      
+      const { data, error } = await supabase
+        .from('user_permissions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setUserPermissions(data);
+
+      // If user is creator, fetch created patients in current session
+      if (data?.permission_type === 'creator') {
+        const sessionId = localStorage.getItem('dialyse_session_id');
+        const { data: createdData, error: createdError } = await supabase
+          .from('user_created_patients')
+          .select('patient_id')
+          .eq('user_id', user?.id)
+          .eq('session_id', sessionId);
+
+        if (createdError) throw createdError;
+        setCreatedPatients(createdData?.map(p => p.patient_id) || []);
+      }
+    } catch (error: any) {
+      console.error('Error fetching permissions:', error);
+    }
+  };
+
   const fetchPatients = async () => {
     try {
+      // Set current user context
+      await supabase.rpc('set_current_user', { username_value: user?.username || '' });
+      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
@@ -132,6 +173,42 @@ const Patients = () => {
 
   const uniqueGS = Array.from(new Set(patients.map(p => p.gs).filter(Boolean)));
 
+  // Fonction pour déterminer si un utilisateur peut effectuer une action sur un patient
+  const canPerformAction = (action: 'view' | 'edit' | 'delete', patientId: string) => {
+    if (user?.role === 'admin') return true;
+    
+    if (action === 'view') {
+      // Viewers peuvent voir seulement les patients assignés
+      if (userPermissions?.permission_type === 'viewer') {
+        return false; // RLS policies handle this at DB level
+      }
+      // Creators peuvent voir tous les patients
+      if (userPermissions?.permission_type === 'creator') {
+        return true;
+      }
+    }
+    
+    if (action === 'edit') {
+      // Seuls les creators peuvent modifier les patients qu'ils ont créés dans cette session
+      if (userPermissions?.permission_type === 'creator') {
+        return createdPatients.includes(patientId);
+      }
+    }
+    
+    if (action === 'delete') {
+      // Seuls les admins peuvent supprimer
+      return false;
+    }
+    
+    return false;
+  };
+
+  // Fonction pour déterminer si le bouton "Nouveau patient" doit être affiché
+  const canCreatePatient = () => {
+    return user?.role === 'admin' || 
+           (userPermissions?.permission_type === 'creator' && userPermissions?.can_create_new_patients);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -148,74 +225,83 @@ const Patients = () => {
             {typeFilter && typeFilter !== 'all' ? `Patients ${typeFilter}s` : 'Liste des patients'}
           </h1>
           <p className="text-muted-foreground">
-            Gérez les informations des patients
+            {user?.role === 'admin' ? 'Gérez les informations des patients' : 
+             userPermissions?.permission_type === 'viewer' ? 'Consultez les patients assignés' :
+             userPermissions?.permission_type === 'creator' ? 'Consultez les patients et créez de nouveaux patients' :
+             'Accès aux patients'}
           </p>
         </div>
-        <Button asChild>
-          <Link to="/patients/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau patient
-          </Link>
-        </Button>
+        {canCreatePatient() && (
+          <Button asChild>
+            <Link to="/patients/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau patient
+            </Link>
+          </Button>
+        )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtres de recherche</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par nom..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+      {/* Masquer les filtres pour les viewers qui ne peuvent voir qu'un patient spécifique */}
+      {user?.role === 'admin' || userPermissions?.permission_type === 'creator' || 
+       (userPermissions?.permission_type === 'viewer' && userPermissions?.can_view_all_patients) ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtres de recherche</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par nom..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
 
-            <Select value={sexeFilter} onValueChange={setSexeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sexe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="M">Masculin</SelectItem>
-                <SelectItem value="F">Féminin</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={gsFilter} onValueChange={setGsFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Groupe sanguin" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                {uniqueGS.map(gs => (
-                  <SelectItem key={gs} value={gs}>{gs}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {!searchParams.get('type') && (
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select value={sexeFilter} onValueChange={setSexeFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Type" />
+                  <SelectValue placeholder="Sexe" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="permanent">Permanent</SelectItem>
-                  <SelectItem value="vacancier">Vacancier</SelectItem>
-                  <SelectItem value="transféré">Transféré</SelectItem>
-                  <SelectItem value="décédé">Décédé</SelectItem>
-                  <SelectItem value="greffé">Greffé</SelectItem>
+                  <SelectItem value="M">Masculin</SelectItem>
+                  <SelectItem value="F">Féminin</SelectItem>
                 </SelectContent>
               </Select>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+
+              <Select value={gsFilter} onValueChange={setGsFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Groupe sanguin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  {uniqueGS.map(gs => (
+                    <SelectItem key={gs} value={gs}>{gs}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {!searchParams.get('type') && (
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous</SelectItem>
+                    <SelectItem value="permanent">Permanent</SelectItem>
+                    <SelectItem value="vacancier">Vacancier</SelectItem>
+                    <SelectItem value="transféré">Transféré</SelectItem>
+                    <SelectItem value="décédé">Décédé</SelectItem>
+                    <SelectItem value="greffé">Greffé</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardContent className="p-0">
@@ -251,6 +337,7 @@ const Patients = () => {
                     <td className="p-4">{patient.tele}</td>
                     <td className="p-4">
                       <div className="flex space-x-2">
+                        {/* Bouton Consulter - toujours visible pour les patients accessibles */}
                         <Button
                           size="sm"
                           variant="outline"
@@ -260,23 +347,31 @@ const Patients = () => {
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          asChild
-                        >
-                          <Link to={`/patients/${patient.id}/edit`}>
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(patient.id, patient.nom_complet)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                        
+                        {/* Bouton Modifier - seulement pour admin ou creators qui ont créé ce patient */}
+                        {canPerformAction('edit', patient.id) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            asChild
+                          >
+                            <Link to={`/patients/${patient.id}/edit`}>
+                              <Edit className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
+                        
+                        {/* Bouton Supprimer - seulement pour admin */}
+                        {canPerformAction('delete', patient.id) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(patient.id, patient.nom_complet)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -285,7 +380,9 @@ const Patients = () => {
             </table>
             {filteredPatients.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                Aucun patient trouvé
+                {user?.role !== 'admin' && userPermissions?.permission_type === 'viewer' 
+                  ? 'Aucun patient assigné' 
+                  : 'Aucun patient trouvé'}
               </div>
             )}
           </div>

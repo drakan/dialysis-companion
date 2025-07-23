@@ -290,6 +290,10 @@ export type Database = {
         Args: { username_value: string }
         Returns: undefined
       }
+      set_session_id: {
+        Args: { session_value: string }
+        Returns: undefined
+      }
       update_user_password: {
         Args: { username_input: string; new_password: string }
         Returns: boolean

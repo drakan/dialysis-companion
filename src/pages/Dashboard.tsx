@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 import { Users, UserPlus, UserX, Heart, Activity } from 'lucide-react';
 
 interface PatientStats {
@@ -25,13 +26,21 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (user?.role === 'admin') {
+      fetchStats();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const fetchStats = async () => {
     try {
+      // Set current user context
+      await supabase.rpc('set_current_user', { username_value: user?.username || '' });
+      
       const { data, error } = await supabase
         .from('patients')
         .select('type');
@@ -112,53 +121,91 @@ const Dashboard = () => {
       <div>
         <h1 className="text-3xl font-bold">Tableau de bord</h1>
         <p className="text-muted-foreground">
-          Vue d'ensemble des patients du centre de dialyse
+          {user?.role === 'admin' 
+            ? 'Vue d\'ensemble des patients du centre de dialyse'
+            : 'Accédez à vos patients autorisés'}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link to="/patients">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total des patients</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">
-                Cliquez pour voir la liste complète
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+      {user?.role === 'admin' ? (
+        // Dashboard complet pour les admins
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link to="/patients">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total des patients</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">
+                  Cliquez pour voir la liste complète
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
-        {Object.entries(stats)
-          .filter(([key]) => key !== 'total')
-          .map(([type, count]) => (
-            <Link key={type} to={`/patients?type=${type}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium capitalize">
-                    {type === 'transféré' ? 'Transférés' : 
-                     type === 'décédé' ? 'Décédés' : 
-                     type === 'greffé' ? 'Greffés' :
-                     type === 'vacancier' ? 'Vacanciers' :
-                     'Permanents'}
-                  </CardTitle>
-                  <div className={getTypeColor(type)}>
-                    {getTypeIcon(type)}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{count}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Cliquez pour voir la liste
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-      </div>
+          {Object.entries(stats)
+            .filter(([key]) => key !== 'total')
+            .map(([type, count]) => (
+              <Link key={type} to={`/patients?type=${type}`}>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium capitalize">
+                      {type === 'transféré' ? 'Transférés' : 
+                       type === 'décédé' ? 'Décédés' : 
+                       type === 'greffé' ? 'Greffés' :
+                       type === 'vacancier' ? 'Vacanciers' :
+                       'Permanents'}
+                    </CardTitle>
+                    <div className={getTypeColor(type)}>
+                      {getTypeIcon(type)}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{count}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Cliquez pour voir la liste
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+        </div>
+      ) : (
+        // Dashboard simple pour les utilisateurs non-admin
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Link to="/patients">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Mes patients</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">👥</div>
+                <p className="text-xs text-muted-foreground">
+                  Accéder à la liste des patients
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link to="/admin">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Administration</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">⚙️</div>
+                <p className="text-xs text-muted-foreground">
+                  Gérer les utilisateurs et permissions
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      )}
     </div>
   );
 };
