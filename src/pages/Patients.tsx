@@ -88,9 +88,17 @@ const Patients = () => {
   };
 
   const fetchPatients = async () => {
+    if (!user) return;
+    
     try {
-      // Set current user context
-      await supabase.rpc('set_current_user', { username_value: user?.username || '' });
+      // Always set current user context for RLS before any operation
+      await supabase.rpc('set_current_user', { username_value: user.username });
+      
+      // Also ensure session is set for creator permissions
+      const sessionId = localStorage.getItem('dialyse_session_id');
+      if (sessionId) {
+        await supabase.rpc('set_session_id', { session_value: sessionId });
+      }
       
       let data, error;
       

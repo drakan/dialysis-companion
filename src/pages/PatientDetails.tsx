@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 
 interface Patient {
@@ -29,15 +30,25 @@ const PatientDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
 
   useEffect(() => {
-    fetchPatient();
-  }, [id]);
+    if (user) {
+      fetchPatient();
+    }
+  }, [id, user]);
 
   const fetchPatient = async () => {
+    if (!user) return;
+    
     try {
+      // Set current user context for RLS
+      await supabase.rpc('set_current_user', { username_value: user.username });
+      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
@@ -46,15 +57,52 @@ const PatientDetails = () => {
 
       if (error) throw error;
       setPatient(data);
+      
+      // Check permissions for this patient
+      await checkPermissions();
     } catch (error) {
       console.error('Erreur:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de charger les détails du patient',
+        description: 'Impossible de charger les détails du patient ou accès non autorisé',
         variant: 'destructive'
       });
+      navigate('/patients');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkPermissions = async () => {
+    if (!user || !id) return;
+    
+    try {
+      // Check if user is admin
+      if (user.role === 'admin') {
+        setCanEdit(true);
+        setCanDelete(true);
+        return;
+      }
+      
+      // Check if user created this patient in current session
+      const sessionId = localStorage.getItem('dialyse_session_id');
+      if (sessionId) {
+        const { data: createdPatients } = await supabase
+          .from('user_created_patients')
+          .select('patient_id')
+          .eq('user_id', user.id)
+          .eq('session_id', sessionId)
+          .eq('patient_id', id);
+          
+        if (createdPatients && createdPatients.length > 0) {
+          setCanEdit(true);
+        }
+      }
+      
+      // Only admins can delete
+      setCanDelete(user.role === 'admin');
+    } catch (error) {
+      console.error('Erreur lors de la vérification des permissions:', error);
     }
   };
 
@@ -122,14 +170,18 @@ const PatientDetails = () => {
               </Badge>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => navigate(`/patients/${id}/edit`)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Modifier
-              </Button>
-              <Button variant="destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Supprimer
-              </Button>
+              {canEdit && (
+                <Button onClick={() => navigate(`/patients/${id}/edit`)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Modifier
+                </Button>
+              )}
+              {canDelete && (
+                <Button variant="destructive" onClick={handleDelete}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
