@@ -288,7 +288,7 @@ const Admin = () => {
       // Set current user context for RLS
       await supabase.rpc('set_current_user', { username_value: currentUser?.username || '' });
       
-      // Save general permissions
+      // Save general permissions using upsert with conflict resolution
       const { error: permError } = await supabase
         .from('user_permissions')
         .upsert({
@@ -296,6 +296,8 @@ const Admin = () => {
           permission_type: userPermissions.permission_type,
           can_view_all_patients: userPermissions.can_view_all_patients,
           can_create_new_patients: userPermissions.can_create_new_patients
+        }, {
+          onConflict: 'user_id'
         });
 
       if (permError) {
