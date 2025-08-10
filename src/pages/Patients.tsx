@@ -110,8 +110,8 @@ const Patients = () => {
           .order('nom_complet');
         data = result.data;
         error = result.error;
-      } else if (userPermissions?.can_view_all_patients) {
-        // User can view all patients
+      } else if (userPermissions?.can_view_all_patients || userPermissions?.permission_type === 'creator') {
+        // User can view all patients (either has permission or is a creator)
         const result = await supabase
           .from('patients')
           .select('*')
